@@ -3,3 +3,4 @@ Using this as my useful version of Hello World! to try out various web developme
 The versions are as follows:
 
   orig/ -- This is my first attempt at using javaScript. Relied heavily on borrowed code from an online tutorial.
+  For my next trick, I want to create a version using vanilla html/css/js using what I learned in Colt Steele's WDBC course
