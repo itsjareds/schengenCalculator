@@ -5,58 +5,83 @@
     <title>Schengen Calculator -- CanDoLatitude.com</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="js/schengen_calculator.js"></script>
-    <link href="styles/cakeform.css" rel="stylesheet" type="text/css" />
+    <link href="styles/styles.css" rel="stylesheet" type="text/css"/>
 </head>
-<body onload='hideTotal()'>
-    <div id="wrap">
-        <form action="" id="cakeform" onsubmit="return false;">
+<body onload="onLoad()">
+<div id="wrap">
+    <form action="" id="calcform" onsubmit="return false;">
         <div>
             <div class="cont_order">
-               <fieldset>
-                <legend>Trip info</legend>
-                <p>Instructions:</p>
-                <ol>
-                <li>Enter trips to the Schengen Area in chronological order (at least the last 6 months)</li>
-                <li>Click "Add a trip" to add more trips</li>
-                <li>When all trips are entered, click "Calculate!"</li>
-                </ol>
-                <p><i>Disclaimer: This calculator is for planning purposes only, it does not guarantee a right to enter the Schengen Area.</i></p>
-                <p>
-                <table id="tripTable">
-                    <tr>
-                        <th>Trip No</th>
-                        <th>Entry date</th>
-                        <th>Exit date </th>
-                        <th>Total days</th>
-                        <th>Reset starts</th>
-                        <th>Reset ends</th>
-                    </tr>
-                    <tr>
-                        <td><div id="tripNo1">1</div></td>
-                        <td><input type="text"  class="dateWidth" id="entrydate1" name="entrydate1" placeholder="MM/DD/YY" onblur="calculateTime()" /></td>
-                        <td><input type="text"  class="dateWidth" id="exitdate1"  name="exitdate1"  placeholder="MM/DD/YY"  onblur="calculateTime()" /></td>
-                        <td><div id="numDays1" class="daysWidth"></div></td>
-                        <td><div id="resetStart1" class="dateWidth"></div></td>
-                        <td><div id="resetEnd1" class="dateWidth"></div></td>
-                    </tr>
-                </table>
-                </p>
-                <input type="button" class="button" value="Add a trip" onclick="addRow();">
-                <div id="totalPrice"></div>
-                
+                <fieldset>
+                    <legend>Trip info</legend>
+                    <p>Instructions:</p>
+                    <ol>
+                        <li>Enter trips to the Schengen Area in chronological order (at least the last 6 months)</li>
+                        <li>Click "Add a trip" to add more trips</li>
+                        <li>When all trips are entered, click "Calculate!"</li>
+                    </ol>
+                    <p><i>Disclaimer: This calculator is for planning purposes only, it does not guarantee a right to enter the Schengen Area.</i></p>
+                    <p>
+                    <table id="tripTable">
+                        <tr>
+                            <th>Trip No</th>
+                            <th>Entry date</th>
+                            <th>Exit date </th>
+                            <th>Total days</th>
+                            <th>Reset starts</th>
+                            <th>Reset ends</th>
+                        </tr>
+                        <tr>
+                            <td><div id="tripNo1">1</div></td>
+                            <td><input type="text" class="dateWidth" id="entrydate1" name="entrydate1" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><input type="text" class="dateWidth" id="exitdate1" name="exitdate1" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><div id="numDays1" class="daysWidth"></div></td>
+                            <td><div id="resetStart1" class="dateWidth"></div></td>
+                            <td><div id="resetEnd1" class="dateWidth"></div></td>
+                        </tr>
+                        <!--<tr>
+                            <td><div id="tripNo2">2</div></td>
+                            <td><input type="text" class="dateWidth" id="entrydate2" name="entrydate2" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><input type="text" class="dateWidth" id="exitdate2" name="exitdate2" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><div id="numDays2" class="daysWidth"></div></td>
+                            <td><div id="resetStart2" class="dateWidth"></div></td>
+                            <td><div id="resetEnd2" class="dateWidth"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div id="tripNo3">3</div></td>
+                            <td><input type="text" class="dateWidth" id="entrydate3" name="entrydate3" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><input type="text" class="dateWidth" id="exitdate3" name="exitdate3" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><div id="numDays3" class="daysWidth"></div></td>
+                            <td><div id="resetStart3" class="dateWidth"></div></td>
+                            <td><div id="resetEnd3" class="dateWidth"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div id="tripNo4">4</div></td>
+                            <td><input type="text" class="dateWidth" id="entrydate4" name="entrydate4" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><input type="text" class="dateWidth" id="exitdate4" name="exitdate4" placeholder="DD/MM/YY" onblur="calculateTime()"/></td>
+                            <td><div id="numDays4" class="daysWidth"></div></td>
+                            <td><div id="resetStart4" class="dateWidth"></div></td>
+                            <td><div id="resetEnd4" class="dateWidth"></div></td>
+                        </tr>-->
+                    </table>
+                    </p>
+                    <input type="button" class="button" value="Add a trip" onclick="addRow();">
+                    <input type="button" class="button" value="Remove a trip" onclick="removeRow();">
+                    <div id="warning"></div>
+
                 </fieldset>
             </div>
-            
-        	<div class="cont_details">
-            	<fieldset>
-                <legend>Active days visualization</legend>
-                <input type="button" class="button" value="Calculate!" onclick="genChart();">
-                <div id="chart_div" style="width:400; height:300"></div>
+
+            <div class="cont_details">
+                <fieldset>
+                    <legend>Active days visualization</legend>
+                    <input type="button" class="button" value="Calculate!" onclick="calculateTime(); genChart();">
+                    <div id="chart_div"></div>
                 </fieldset>
             </div>
-        </div>  
-       </form>
-	</div><!--End of wrap-->
+        </div>
+    </form>
+</div><!--End of wrap-->
 
 </body>
 </html>

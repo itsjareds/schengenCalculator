@@ -5,301 +5,303 @@ www.gnu.org/licenses/lgpl.html
 You are free to use the code in Commercial or non-commercial projects
 */
 
-// This is a global variable (EEK!!!)
-// It contains the trip table entered by the user plus the calculated data
-// It will be used by the function that draws the chart
-var tripData = [];
+const MAX_DAYS = 90;
+const SCHENGEN_PERIOD = 180;
 
 function calculateTime()
 {
     // Get a handle to the form
-    // TODO: Change this from "cakeform" to something appropriate to this being a calculator
-    var theForm = document.forms["cakeform"];
+    const frm = document.forms["calcform"];
 
     // Get handle to the div with the output
-    // TODO: Change name to something appropriate to the calculator
-    var divobj = document.getElementById("totalPrice");
-    divobj.style.display="block";
+    const elmWarning = document.getElementById("warning");
+    elmWarning.style.display="block";
 
     // Get handle to the table
-    var myTable = document.getElementById("tripTable");
+    const tbl = document.getElementById("tripTable");
+
+    // Contains the trip table entered by the user plus the calculated data
+    // It will be used by the function that draws the chart
+    let tripData = createArray(tbl.rows.length - 1, 0)
 
     // Loop across all rows of the table checking the inputs and calculating the output
-    for(idx = 1; idx < myTable.rows.length; idx++) {
-        var numdaysobj = document.getElementById("numDays"+idx);
-        numdaysobj.style.display="block";
-        var resetstartobj = document.getElementById("resetStart"+idx);
-        resetstartobj.style.display="block";
-        var resetendobj = document.getElementById("resetEnd"+idx);
-        resetendobj.style.display="block";
+    // TODO: Enhance to ignore blank rows, sort (& merge?) the trips, validate overlaps and date range (entry<=exit)
+    // Can the row index be removed from element ids?
+    // Then rows in the middle can be deleted (or skipped) without throwing off the indexing.
+    for(let tblIdx = 1; tblIdx <= tripData.length; tblIdx++) {
+        const elmNumDays = document.getElementById("numDays"+tblIdx);
+        elmNumDays.style.display="block";
+        const elmResetStart = document.getElementById("resetStart"+tblIdx);
+        elmResetStart.style.display="block";
+        const elmResetEnd = document.getElementById("resetEnd"+tblIdx);
+        elmResetEnd.style.display="block";
 
         // Grab the text in the entry and exit boxes
-        var entryText  = theForm.elements["entrydate"+idx].value;
-        var exitText   = theForm.elements["exitdate"+idx].value;
+        let strEntryDate  = frm.elements["entrydate"+tblIdx].value;
+        let strExitDate   = frm.elements["exitdate"+tblIdx].value;
 
         // Check to see if both have text
-        if (entryText == "") {
-            divobj.innerHTML = "Please enter the date you entered the Schengen Zone into row "+idx;
-            return;
-        } else if (exitText == "") {
-            divobj.innerHTML = "Please enter the date you exited the Schengen Zone into row "+idx;
-            return;
-        }
 
-        // Split the text dates into their components (assumption that format is MM-DD-YYYY)
-        // Uses dashes, slashes or dots as delimiters (user could even mix them)
-        // TODO: Make it understand one digit date/month and two digit year
-        // TODO: Do some bounds checking
-        // TODO: Give option to enter date in non-US format (DD-MM-YYYY)
-        var entryDate  = /^(\d\d|\d)[\/\-\.](\d\d|\d)[\/\-\.](\d\d|\d\d\d\d)$/.exec(entryText);
-        var exitDate   = /^(\d\d|\d)[\/\-\.](\d\d|\d)[\/\-\.](\d\d|\d\d\d\d)$/.exec(exitText);
+        if (strEntryDate == "") {
+            elmWarning.innerHTML = "Please enter the date you entered the Schengen Zone into row "+tblIdx;
+            return null;
+        }
+        if (strExitDate == "") {
+            elmWarning.innerHTML = "Please enter the date you exited the Schengen Zone into row "+tblIdx;
+            return null;
+        }
 
         // Error check that the entry and exit are in the proper form
-        if (entryDate === null) {
-            divobj.innerHTML = "Please enter an entry date into row "+idx+" in a valid format (MM/DD/YY)";
-            return;
-        } else if (exitDate === null) {
-            divobj.innerHTML = "Please enter an exit date into row "+idx+" in a valid format (MM/DD/YY)";
-            return;
-        } else {
-            //divobj.innerHTML = "I think the dates are in the proper form entry "+entryDate+" exit "+exitDate;
-            //return;
+        let dtmEntryDate = parseDate(strEntryDate);
+        let dtmExitDate = parseDate(strExitDate);
+
+        if (dtmEntryDate === null) {
+            elmWarning.innerHTML = "Please enter an entry date into row "+tblIdx+" in a valid format (MM/DD/YY)";
+            return null;
+        }
+        if (dtmExitDate === null) {
+            elmWarning.innerHTML = "Please enter an exit date into row "+tblIdx+" in a valid format (MM/DD/YY)";
+            return null;
         }
 
-        // Create the date objects
-        var entryMonth = entryDate[1] - 1; // The months start at 0 in JS
-        var entryDay   = entryDate[2];
-        var entryYear  = entryDate[3];
-        console.log("entry year is "+entryYear);
-        if (entryYear < 100) {
-            entryYear = parseInt(entryYear) + 2000;
-            console.log("entry year was entered as two digits, changing it to "+entryYear);
-        }
-        var entryDateObj = new Date(entryYear, entryMonth, entryDay);
-        var exitMonth  = exitDate[1] - 1; // The months start at 0 in JS
-        var exitDay    = exitDate[2];
-        var exitYear   = exitDate[3];
-        if (exitYear < 100) { exitYear = parseInt(exitYear) + 2000; }
-        var exitDateObj  = new Date(exitYear,  exitMonth,  exitDay);
-
-        var daysBetween = Math.round((exitDateObj - entryDateObj)/(1000*60*60*24));
-
-        divobj.innerHTML = "In row "+idx+" entered the Zone on "+entryDateObj.toDateString()+" and exited on "+exitDateObj.toDateString()+" a total of "+daysBetween+" days";
-        numdaysobj.innerHTML = daysBetween + 1;
-        var resetStartDate = new Date(entryDateObj);
-        resetStartDate.setDate(resetStartDate.getDate() + 180);
-        resetstartobj.innerHTML = resetStartDate.toDateString();
-        var resetEndDate = new Date(exitDateObj);
-        resetEndDate.setDate(resetEndDate.getDate() + 180);
-        resetendobj.innerHTML = resetEndDate.toDateString();
-        //return;
-        //
         // Save the data (even if it already exists) in the tripData array in an array of anonymous objects
-        tripData[idx] = { entryDate: entryDateObj,
-                          exitDate:  exitDateObj,
-                          numDays:   daysBetween + 1,
-                          startRst:  resetStartDate,
-                          endRst:    resetEndDate     };
+        let trip = {
+            dtmEntryDate:   dtmEntryDate,
+            dtmExitDate:    dtmExitDate,
+            intDays:        daysBetween(dtmEntryDate, dtmExitDate),
+            dtmResetStart:  new Date(dtmEntryDate).addDays(SCHENGEN_PERIOD),
+            dtmResetEnd:    new Date(dtmExitDate).addDays(SCHENGEN_PERIOD)
+        };
+        tripData[tblIdx-1] = trip;
 
+        elmWarning.innerHTML = "In row "+tblIdx+" entered the Zone on "+trip.dtmEntryDate.toDateString()+" and exited on "+trip.dtmExitDate.toDateString()+" a total of "+trip.intDays+" days";
+        elmNumDays.innerHTML = trip.intDays;
+        elmResetStart.innerHTML = trip.dtmResetStart.toDateString();
+        elmResetEnd.innerHTML = trip.dtmResetEnd.toDateString();
     }
+
+    return tripData;
 }
 
 function addRow()
 {
-    var myTable = document.getElementById("tripTable");
-    var currentIndex = myTable.rows.length;
-    var currentRow = myTable.insertRow(-1);
+    const tbl = document.getElementById("tripTable");
+    let intCurrentIndex = tbl.rows.length;
+    let intCurrentRow = tbl.insertRow(-1);
 
-    var tripNoBox = document.createElement("div");
-    tripNoBox.setAttribute("id", "tripNo" + currentIndex);
-    tripNoBox.innerHTML = currentIndex;
+    let elmTripNo = document.createElement("div");
+    elmTripNo.setAttribute("id", "tripNo" + intCurrentIndex);
+    elmTripNo.innerHTML = intCurrentIndex;
 
-    var entryBox = document.createElement("input");
-    entryBox.setAttribute("name", "entrydate" + currentIndex);
-    entryBox.setAttribute("id", "entrydate" + currentIndex);
-    entryBox.setAttribute("placeholder", "MM/DD/YY");
-    entryBox.setAttribute("onblur", "calculateTime()");
+    let elmEntry = document.createElement("input");
+    elmEntry.setAttribute("name", "entrydate" + intCurrentIndex);
+    elmEntry.setAttribute("id", "entrydate" + intCurrentIndex);
+    elmEntry.setAttribute("placeholder", "DD/MM/YY");
+    elmEntry.setAttribute("onblur", "calculateTime()");
 
-    var exitBox = document.createElement("input");
-    exitBox.setAttribute("name", "exitdate" + currentIndex);
-    exitBox.setAttribute("id", "exitdate" + currentIndex);
-    exitBox.setAttribute("placeholder", "MM/DD/YY");
-    exitBox.setAttribute("onblur", "calculateTime()");
+    let elmExit = document.createElement("input");
+    elmExit.setAttribute("name", "exitdate" + intCurrentIndex);
+    elmExit.setAttribute("id", "exitdate" + intCurrentIndex);
+    elmExit.setAttribute("placeholder", "DD/MM/YY");
+    elmExit.setAttribute("onblur", "calculateTime()");
 
-    var numDaysBox = document.createElement("div");
-    numDaysBox.setAttribute("id", "numDays" + currentIndex);
+    let elmNumDays = document.createElement("div");
+    elmNumDays.setAttribute("id", "numDays" + intCurrentIndex);
 
-    var resetStartBox = document.createElement("div");
-    resetStartBox.setAttribute("id", "resetStart" + currentIndex);
+    let elmResetStart = document.createElement("div");
+    elmResetStart.setAttribute("id", "resetStart" + intCurrentIndex);
 
-    var resetEndBox = document.createElement("div");
-    resetEndBox.setAttribute("id", "resetEnd" + currentIndex);
+    let elmResetEnd = document.createElement("div");
+    elmResetEnd.setAttribute("id", "resetEnd" + intCurrentIndex);
 
-    var currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(tripNoBox);
+    let cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmTripNo);
 
-    currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(entryBox);
+    cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmEntry);
 
-    currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(exitBox);
+    cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmExit);
 
-    currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(numDaysBox);
+    cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmNumDays);
 
-    currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(resetStartBox);
+    cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmResetStart);
 
-    currentCell = currentRow.insertCell(-1);
-    currentCell.appendChild(resetEndBox);
+    cell = intCurrentRow.insertCell(-1);
+    cell.appendChild(elmResetEnd);
 }
 
-function hideTotal()
+function removeRow() {
+    const tbl = document.getElementById("tripTable");
+    if(tbl.rows.length > 2) {
+        tbl.deleteRow(tbl.rows.length - 1)
+    }
+}
+
+function onLoad()
 {
-    var divobj = document.getElementById('totalPrice');
-    divobj.style.display='none';
-    var resultobj = document.getElementById("numDays1");
-    //divobj.innerHTML = "Initialized";
-
-    var data;
-    var chart;
-
-    // Load the Visualization API and the piechart package.
+    // Load the Visualization API and the corechart package.
     google.charts.load('current', {'packages':['corechart']});
-
-    // Set a callback to run when the Google Visualization API is loaded.
-//    google.charts.setOnLoadCallback(drawChart);
-
-}
-
-function selectHandler() {
-        var selectedItem = chart.getSelection()[0];
-        var value = data.getValue(selectedItem.row, 0);
-        alert('The user selected ' + value);
-}
-
-// Callback that creates and populates a data table,
-// instantiates the pie chart, passes in the data and
-// draws it.
-function drawChart() {
-    // Create our data table.
-    data = new google.visualization.DataTable();
-    data.addColumn('string', 'Topping');
-    data.addColumn('number', 'Slices');
-    data.addRows([
-          ['Mushrooms', 3],
-          ['Onions', 1],
-          ['Olives', 1],
-          ['Zucchini', 1],
-          ['Pepperoni', 2]
-    ]);
-
-    // Set chart options
-    var options = {'title':'How Much Pizza I Ate Last Night',
-                   'width':400,
-                   'height':300};
-
-    // Instantiate and draw our chart, passing in some options.
-    chart = new google.visualization.PieChart(document.getElementById('chart_div'));
-    google.visualization.events.addListener(chart, 'select', selectHandler);
-    chart.draw(data, options);
 }
 
 function genChart()
 {
-    var divobj = document.getElementById('totalPrice');
-    divobj.style.display='block';
+    const arrTripData = calculateTime() ?? [];
 
-    // Get handle to the table
-    var myTable = document.getElementById("tripTable");
+    if(arrTripData.length == 0) {
+        document.getElementById('chart_div').style.display = 'none';
+    } else {
+        document.getElementById('chart_div').style.display = 'block';
+        document.getElementById('warning').style.removeProperty('display');
 
-    // The number of rows - 1 tells us how many trips there are
-    var numTrips = myTable.rows.length - 1;
+        // Create our data table.
+        const data = new google.visualization.DataTable();
 
-    // Create the data object
-    var data;
-    var chart;
+        // One column for the date and a column per trip
+        data.addColumn('datetime', 'Date');
+        data.addColumn('number', MAX_DAYS + ' Days Max');
+        data.addColumn('number', 'Max Stay');
+        //data.addColumn('number', 'Day');
+        arrTripData.forEach((trip, idx) => {
+            data.addColumn('number', 'Trip'+(idx+1));
+        })
 
-    // Assuming I dont need this since it is already loaded
-    // // Load the Visualization API and the piechart package.
-    // google.charts.load('current', {'packages':['corechart']});
-    //
-    // // Set a callback to run when the Google Visualization API is loaded.
-    // google.charts.setOnLoadCallback(drawChart);
+        // Need to do some work before we can populate the rows
+        // Big assumption here is that the trips are in order (TODO: make sure this is true, also validate no overlaps)
+        // so the first trip entry date is the first row
+        // and the last trip end reset date is the last row
+        const dtmRangeStart = arrTripData[0].dtmEntryDate;
+        const dtmRangeEnd   = arrTripData[arrTripData.length-1].dtmResetEnd;
 
-    // Create our data table.
-    data = new google.visualization.DataTable();
-
-    // One column for the date and a column per trip
-    data.addColumn('datetime', 'Date');
-    data.addColumn('number', '90 Days Max');
-    //data.addColumn('number', 'Day');
-    for(idx = 1; idx <= numTrips; idx++) {
-        data.addColumn('number', 'Trip'+idx);
-    }
-
-    // Need to do some work before we can populate the rows
-    // Big assumption here is that the trips are in order (TODO: make sure this is true)
-    // so the first trip entry date is the first row
-    // and the last trip end reset date is the last rowa
-    var startDateRange = new Date(tripData[1].entryDate);
-    var endDateRange   = new Date(tripData[numTrips].endRst);
-    //var endDateRange   = new Date(tripData[1].exitDate);
-    var lenDateRange   = Math.round((endDateRange - startDateRange)/(1000*60*60*24)) + 1;
-
-    // Now loop through the date range populating the active days for each trip
-    var activeDays = [];
-    activeDays.length = numTrips;
-    activeDays.fill(0);
-    var fooIdx = 0;
-    for(dateIdx = new Date(startDateRange); dateIdx <= endDateRange; dateIdx.setDate(dateIdx.getDate() + 1)) {
-        // Loop through the trips and update the activeDays count accordingly
-        // TODO: Stinky code smell, sometimes I'm counting trips from 0 and other times I count from 1
-        for(tripIdx = 0; tripIdx < numTrips; tripIdx++) {
-            if((dateIdx >= tripData[tripIdx + 1].entryDate) &&
-               (dateIdx <= tripData[tripIdx + 1].exitDate)) {
-                   activeDays[tripIdx]++;
-                   console.log("added an active day to trip "+tripIdx);
-            } else
-            if((dateIdx >= tripData[tripIdx + 1].startRst) &&
-               (dateIdx <= tripData[tripIdx + 1].endRst)) {
-                   activeDays[tripIdx]--;
-                   console.log("removed an active day to trip "+tripIdx);
-            }
+        // Now loop through the date range populating the active days for each trip
+        let arrActiveDays = createArray(arrTripData.length, 0);
+        let intFooIdx = 0;
+        for(let dtmIdx = dtmRangeStart; dtmIdx <= dtmRangeEnd; dtmIdx.addDays(1)) {
+            // Populate the graph
+            const intForecastDays = forecast(arrTripData, [...arrActiveDays], dtmIdx, dtmRangeEnd);
+            arrActiveDays = calculateDay(arrTripData, arrActiveDays, dtmIdx);
+            const arrRow = [new Date(dtmIdx), MAX_DAYS, intForecastDays].concat(arrActiveDays);
+            data.addRow(arrRow);
+            console.log("Row "+intFooIdx+" is "+arrRow);
+            intFooIdx++;
         }
-        var rowData = [new Date(dateIdx), 90].concat(activeDays);
-        //var rowData = [fooIdx].concat(activeDays);
-        data.addRow(rowData);
-        console.log("Row "+fooIdx+" is "+rowData);
-        //divobj.innerHTML = "Row "+fooIdx+" is "+rowData;
-        fooIdx++;
+
+        // Set chart options
+        const options = {
+            'title':'Active days on Schengen Zone tourist visa',
+            //'width':1500,
+            //'height':1200,
+            'width':500,
+            'height':375,
+            'isStacked':true,
+            'hAxis':{
+                'title':'Date',
+                'format':'MMM yy'
+            },
+            'seriesType':'area',
+            'series':{
+                0:{
+                    'type':'line',
+                    'lineDashStyle':[1,1],
+                    'color':'red'
+                },
+                1:{
+                    'type':'line',
+                    'lineDashStyle':[1,1],
+                    'color':'green',
+                    pointsVisible:true,
+                    pointSize: 1
+                }
+            }
+        };
+        //'hAxis':{'title':'Date',
+        //         'format':'M/d/y',
+        //         'minValue':startDateRange,
+        //         'maxValue':endDateRange}};
+
+        // Instantiate and draw our chart, passing in some options.
+        const chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+        //google.visualization.events.addListener(chart, 'select', selectHandler);
+        chart.draw(data, options);
+    }
+}
+
+function forecast(arrTripData, arrActiveDays, dtmIdx, dtmRangeEnd) {
+    // Forecast the longest stay possible beginning on the current day (dtmIdx)
+    // Algorithm: Treat every day as active starting from today, and count the days
+    //            between today and the day when the stay limit is reached.
+
+    console.log("begin forecast")
+    let blnBreak = false;
+    let dtmForecastIdx;
+    for(dtmForecastIdx = new Date(dtmIdx); dtmForecastIdx <= dtmRangeEnd; dtmForecastIdx.addDays(1)) {
+        arrActiveDays = calculateDay(arrTripData, arrActiveDays, dtmForecastIdx, true);
+        if (arrActiveDays.reduce(add, 0) > MAX_DAYS) {
+            blnBreak = true;
+            break;
+        }
+    }
+    console.log("end forecast");
+
+    return blnBreak ? daysBetween(dtmIdx, dtmForecastIdx) - 1 : MAX_DAYS;
+}
+
+function add(accumulator, a) {
+    // using this with Array.reduce creates a sum function
+    return accumulator + a;
+}
+
+Date.prototype.addDays = function(days) {
+    // javascript dates are confusing.. need this for my sanity
+    this.setDate(this.getDate() + parseInt(days));
+    return this;
+};
+
+function parseDate(strDateText) {
+    // Split the text dates into their components (assumption that format is DD-MM-YYYY)
+    // Uses dashes, slashes or dots as delimiters (user could even mix them)
+    // TODO: Do some bounds checking
+    // TODO: Give option to enter date in US format (MM-DD-YYYY)
+    const arrDateParts = /^(\d\d|\d)[\/\-\.](\d\d|\d)[\/\-\.](\d\d|\d\d\d\d)$/.exec(strDateText);
+    if(arrDateParts === null) return null;
+
+    let day    = arrDateParts[1];
+    let month  = arrDateParts[2] - 1; // The months start at 0 in JS
+    let year   = arrDateParts[3];
+    if (year < 100) { year = parseInt(year) + 2000; }
+    return new Date(year, month, day);
+}
+
+function daysBetween(dtm1, dtm2) {
+    return Math.round((dtm2 - dtm1)/(1000*60*60*24)) + 1;
+}
+
+function createArray(intLength, fill=null) {
+    let arr = [];
+    arr.length = intLength;
+    if(fill!==null) arr.fill(fill);
+    return arr;
+}
+
+function calculateDay(arrTripData, arrActiveDays, dtmIdx, blnForceActive=false) {
+    // Loop through the trips and update the arrActiveDays count accordingly
+    arrTripData.forEach((trip, idx) => {
+        if(dtmIdx >= trip.dtmEntryDate && dtmIdx <= trip.dtmExitDate) {
+            arrActiveDays[idx]++;
+            console.log("added an active day to trip "+(idx+1));
+            blnForceActive = false; // To prevent double-counting days when blnForceActive=true
+        } else
+        if(dtmIdx >= trip.dtmResetStart && dtmIdx <= trip.dtmResetEnd) {
+            arrActiveDays[idx]--;
+            console.log("removed an active day to trip "+(idx+1));
+        }
+    });
+    if(arrTripData.length > 0 && blnForceActive) {
+        arrActiveDays[0]++;
+        console.log("force-added an active day to trip 1")
     }
 
-    // Set chart options
-    var options = {'title':'Active days on Schengen Zone tourist visa',
-                   'width':400,
-                   'height':300,
-                   'isStacked':true,
-                   'hAxis':{'title':'Date',
-                            'format':'MMM yy'},
-                   'seriesType':'area',
-                   'series':{0:{'type':'line',
-                                'lineDashStyle':[1,1],
-                                'color':'red'}}
-                  };
-                   //'hAxis':{'title':'Date',
-                   //         'format':'M/d/y',
-                   //         'minValue':startDateRange,
-                   //         'maxValue':endDateRange}};
-
-    // Instantiate and draw our chart, passing in some options.
-    chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
-    google.visualization.events.addListener(chart, 'select', selectHandler);
-    chart.draw(data, options);
-//
-////    function selectHandler() {
-////        var selectedItem = chart.getSelection()[0];
-////        var value = data.getValue(selectedItem.row, 0);
-////        alert('The user selected ' + value);
-////    }
+    return arrActiveDays;
 }
