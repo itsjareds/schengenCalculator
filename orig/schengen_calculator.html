@@ -65,8 +65,8 @@
                         </tr>-->
                     </table>
                     </p>
-                    <input type="button" class="button" value="Add a trip" onclick="addRow();">
-                    <input type="button" class="button" value="Remove a trip" onclick="removeRow();">
+                    <input type="button" class="button" value="Add a trip" onclick="addRow();"/>
+                    <input type="button" class="button" value="Remove a trip" onclick="removeRow();"/>
                     <div id="warning"></div>
 
                 </fieldset>
@@ -75,7 +75,11 @@
             <div class="cont_details">
                 <fieldset>
                     <legend>Active days visualization</legend>
-                    <input type="button" class="button" value="Calculate!" onclick="calculateTime(); genChart();">
+                    <input type="button" class="button" value="Calculate!" onclick="calculateTime(); genChart();"/>
+                    <div class="form-group">
+                        <input type="checkbox" id="blnShowMaxDays"/>
+                        <label for="blnShowMaxDays">Show Max Days</label>
+                    </div>
                     <div id="chart_div"></div>
                 </fieldset>
             </div>

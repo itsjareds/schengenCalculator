@@ -158,15 +158,16 @@ function genChart()
 
         // Create our data table.
         const data = new google.visualization.DataTable();
+        const ENABLE_FORECAST = document.getElementById('blnShowMaxDays').checked;
 
         // One column for the date and a column per trip
         data.addColumn('datetime', 'Date');
         data.addColumn('number', MAX_DAYS + ' Days Max');
-        data.addColumn('number', 'Max Stay');
         //data.addColumn('number', 'Day');
         arrTripData.forEach((trip, idx) => {
             data.addColumn('number', 'Trip'+(idx+1));
         })
+        if(ENABLE_FORECAST) data.addColumn('number', 'Max Stay', 'forecast');
 
         // Need to do some work before we can populate the rows
         // Big assumption here is that the trips are in order (TODO: make sure this is true, also validate no overlaps)
@@ -180,16 +181,23 @@ function genChart()
         let intFooIdx = 0;
         for(let dtmIdx = dtmRangeStart; dtmIdx <= dtmRangeEnd; dtmIdx.addDays(1)) {
             // Populate the graph
-            const intForecastDays = forecast(arrTripData, [...arrActiveDays], dtmIdx, dtmRangeEnd);
+            let arrRow = [new Date(dtmIdx), MAX_DAYS];
+            let intForecastDays = 0;
+            if(ENABLE_FORECAST) {
+                intForecastDays = forecast(arrTripData, [...arrActiveDays], dtmIdx, dtmRangeEnd);
+            }
             arrActiveDays = calculateDay(arrTripData, arrActiveDays, dtmIdx);
-            const arrRow = [new Date(dtmIdx), MAX_DAYS, intForecastDays].concat(arrActiveDays);
-            data.addRow(arrRow);
+            arrRow = arrRow.concat(arrActiveDays);
+            if(ENABLE_FORECAST) {
+                arrRow = arrRow.concat([intForecastDays]);
+            }
             console.log("Row "+intFooIdx+" is "+arrRow);
+            data.addRow(arrRow);
             intFooIdx++;
         }
 
         // Set chart options
-        const options = {
+        let options = {
             'title':'Active days on Schengen Zone tourist visa',
             //'width':1500,
             //'height':1200,
@@ -206,16 +214,18 @@ function genChart()
                     'type':'line',
                     'lineDashStyle':[1,1],
                     'color':'red'
-                },
-                1:{
-                    'type':'line',
-                    'lineDashStyle':[1,1],
-                    'color':'green',
-                    pointsVisible:true,
-                    pointSize: 1
                 }
             }
         };
+        if(ENABLE_FORECAST) {
+            options.series[data.getNumberOfColumns()-2] = {
+                'type':'line',
+                'lineDashStyle':[1,1],
+                'color':'green',
+                pointsVisible:true,
+                pointSize: 1
+            };
+        }
         //'hAxis':{'title':'Date',
         //         'format':'M/d/y',
         //         'minValue':startDateRange,
